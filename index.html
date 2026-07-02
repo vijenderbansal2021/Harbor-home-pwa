@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="theme-color" content="#0B3B3C" />
+<title>Harbor Home — Florida Home Insurance</title>
+
+<!-- PWA manifest injected inline as a data URI so the whole app is one file -->
+<link rel="manifest" id="mf" />
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230B3B3C'/%3E%3Cpath d='M50 22 L74 40 V72 H26 V40 Z' fill='none' stroke='%23E8B04B' stroke-width='6' stroke-linejoin='round'/%3E%3C/svg%3E" />
+
+<style>
+:root{
+  --ink:#0B3B3C;        /* deep teal — trust, coastal */
+  --ink-2:#12514F;
+  --gold:#E8B04B;       /* signature accent — sunlit */
+  --gold-deep:#C98E2B;
+  --sand:#F6F2E9;       /* warm paper */
+  --card:#FFFFFF;
+  --line:#E4DECF;
+  --text:#1B2A2A;
+  --muted:#6C7A78;
+  --ok:#1F8A5B;
+  --err:#C0492E;
+  --shadow:0 6px 24px rgba(11,59,60,.10);
+  --r:16px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  background:var(--sand);color:var(--text);
+  line-height:1.5;
+  overscroll-behavior:none;
+}
+/* Phone frame */
+#app{
+  max-width:430px;margin:0 auto;min-height:100vh;
+  background:var(--sand);position:relative;
+  display:flex;flex-direction:column;
+}
+h1,h2,h3{font-family:"Fraunces","Georgia",serif;font-weight:600;letter-spacing:-.01em;margin:0}
+.eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-deep);font-weight:700}
+.muted{color:var(--muted)}
+
+/* Top bar + progress */
+.topbar{
+  position:sticky;top:0;z-index:20;background:var(--ink);color:#fff;
+  padding:14px 18px 10px;
+}
+.brand{display:flex;align-items:center;gap:9px;font-family:"Fraunces",serif;font-weight:600;font-size:17px}
+.brand svg{flex:none}
+.progress{height:4px;background:rgba(255,255,255,.18);border-radius:99px;margin-top:12px;overflow:hidden}
+.progress i{display:block;height:100%;width:0;background:var(--gold);transition:width .4s cubic-bezier(.4,0,.2,1)}
+.steplabel{display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.7);margin-top:6px;letter-spacing:.03em}
+
+/* Screens */
+.screen{padding:22px 18px 120px;flex:1;animation:fade .35s ease}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.hidden{display:none !important}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px;box-shadow:var(--shadow)}
+.card + .card{margin-top:14px}
+
+label.field{display:block;margin:14px 0 0}
+label.field span{display:block;font-size:13px;font-weight:600;margin-bottom:6px;color:var(--ink)}
+input,select{
+  width:100%;padding:14px;border:1.5px solid var(--line);border-radius:12px;
+  font-size:16px;font-family:inherit;background:#fff;color:var(--text);
+}
+input:focus,select:focus{outline:none;border-color:var(--ink)}
+.err-msg{color:var(--err);font-size:12.5px;margin-top:6px;display:none}
+input.invalid{border-color:var(--err)}
+
+/* Buttons */
+.btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;padding:16px;border:none;border-radius:14px;font-size:16px;font-weight:600;
+  font-family:inherit;cursor:pointer;transition:transform .08s,filter .2s;
+}
+.btn:active{transform:scale(.985)}
+.btn-primary{background:var(--ink);color:#fff}
+.btn-primary:hover{filter:brightness(1.08)}
+.btn-gold{background:var(--gold);color:#2a1e00}
+.btn-ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.dock{
+  position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+  width:100%;max-width:430px;padding:14px 18px calc(14px + env(safe-area-inset-bottom));
+  background:linear-gradient(to top,var(--sand) 72%,rgba(246,242,233,0));
+  z-index:15;
+}
+
+/* Chips (prefilled data) */
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.chip{
+  display:inline-flex;align-items:center;gap:6px;background:var(--sand);
+  border:1px solid var(--line);border-radius:99px;padding:7px 12px;font-size:13px;font-weight:500;
+}
+.chip b{font-weight:700;color:var(--ink)}
+.chip .dot{width:7px;height:7px;border-radius:50%;background:var(--ok)}
+
+/* Package cards */
+.pkg{border:2px solid var(--line);border-radius:var(--r);padding:16px;margin-top:12px;cursor:pointer;transition:.2s;position:relative;background:#fff}
+.pkg.sel{border-color:var(--ink);box-shadow:var(--shadow)}
+.pkg.reco::after{content:"Recommended";position:absolute;top:-10px;right:14px;background:var(--gold);color:#2a1e00;font-size:10.5px;font-weight:700;letter-spacing:.06em;padding:3px 9px;border-radius:99px;text-transform:uppercase}
+.pkg .top{display:flex;justify-content:space-between;align-items:baseline}
+.pkg .name{font-family:"Fraunces",serif;font-size:19px;font-weight:600}
+.pkg .price{font-family:"Fraunces",serif;font-size:22px;font-weight:600;color:var(--ink)}
+.pkg .price small{font-size:12px;color:var(--muted);font-weight:400}
+.pkg .feat{font-size:12.5px;color:var(--muted);margin-top:6px}
+
+/* Sliders */
+.slider-row{margin-top:16px}
+.slider-row .lab{display:flex;justify-content:space-between;font-size:13px;font-weight:600;margin-bottom:8px}
+.slider-row .val{color:var(--ink);font-weight:700}
+input[type=range]{-webkit-appearance:none;height:6px;border-radius:99px;background:var(--line);padding:0}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:var(--ink);border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.25);cursor:pointer}
+input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--ink);border:3px solid #fff;cursor:pointer}
+
+.premium-bar{
+  position:sticky;top:0;z-index:5;background:var(--ink-2);color:#fff;border-radius:14px;
+  padding:14px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;
+}
+.premium-bar .n{font-family:"Fraunces",serif;font-size:26px;font-weight:600}
+.premium-bar .n small{font-size:12px;opacity:.75;font-weight:400}
+.premium-bar.flash{animation:flash .5s}
+@keyframes flash{0%{background:var(--gold);color:#2a1e00}100%{background:var(--ink-2);color:#fff}}
+
+/* Disclosure drawer */
+details.disc{margin-top:14px;border:1px solid var(--line);border-radius:12px;background:#fff;overflow:hidden}
+details.disc summary{padding:14px;font-size:13.5px;font-weight:600;cursor:pointer;list-style:none;display:flex;justify-content:space-between}
+details.disc summary::-webkit-details-marker{display:none}
+details.disc[open] summary{border-bottom:1px solid var(--line)}
+details.disc .body{padding:14px;font-size:12.5px;color:var(--muted)}
+details.disc .body p{margin:0 0 8px}
+
+/* Rows / summary */
+.row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}
+.row:last-child{border:0}
+.row b{font-weight:600}
+
+/* Pay methods */
+.pay{display:flex;align-items:center;gap:12px;border:2px solid var(--line);border-radius:14px;padding:14px;margin-top:10px;cursor:pointer}
+.pay.sel{border-color:var(--ink)}
+.pay .ic{width:40px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff}
+
+/* Success + Dec */
+.seal{width:76px;height:76px;border-radius:50%;background:var(--ok);display:flex;align-items:center;justify-content:center;margin:8px auto 16px}
+.dec{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:20px;font-size:13px}
+.dec .hd{display:flex;justify-content:space-between;border-bottom:2px solid var(--ink);padding-bottom:12px;margin-bottom:12px}
+.dec .hd .co{font-family:"Fraunces",serif;font-weight:600;color:var(--ink);font-size:16px}
+.dec .ln{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dotted var(--line)}
+.dec .ln span:first-child{color:var(--muted)}
+
+.toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 18px;border-radius:99px;font-size:13.5px;box-shadow:var(--shadow);z-index:40;opacity:0;transition:.3s;pointer-events:none;max-width:90%}
+.toast.show{opacity:1}
+
+.note{background:#FBF6E8;border:1px solid var(--gold);border-radius:12px;padding:12px 14px;font-size:12px;color:#6a5416;margin-top:14px}
+.spin{width:18px;height:18px;border:2.5px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;display:inline-block}
+@keyframes sp{to{transform:rotate(360deg)}}
+.biometric{width:64px;height:64px;margin:0 auto 4px;border-radius:50%;border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;cursor:pointer}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="brand">
+      <svg width="22" height="22" viewBox="0 0 100 100"><path d="M50 22 L74 40 V72 H26 V40 Z" fill="none" stroke="#E8B04B" stroke-width="7" stroke-linejoin="round"/></svg>
+      Harbor Home
+    </div>
+    <div class="progress"><i id="bar"></i></div>
+    <div class="steplabel"><span id="stepName">Sign in</span><span id="stepCount">Step 1 of 6</span></div>
+  </div>
+
+  <!-- 1. LOGIN -->
+  <section class="screen" id="s-login">
+    <p class="eyebrow">Florida home insurance</p>
+    <h1 style="font-size:30px;margin:6px 0 4px">Coverage in<br>under 10 minutes.</h1>
+    <p class="muted" style="margin-bottom:22px">Sign in to start. We pull your home's details automatically — no long forms.</p>
+    <div class="card">
+      <label class="field"><span>Email or mobile</span>
+        <input id="identifier" type="text" inputmode="email" placeholder="you@email.com" value="demo@harbor.com" />
+        <div class="err-msg" id="e-identifier">Enter a valid email or 10-digit number.</div>
+      </label>
+      <div style="text-align:center;margin:20px 0 6px">
+        <div class="biometric" onclick="Flow.biometric()" title="Face ID">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#C98E2B" stroke-width="1.6" stroke-linecap="round"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><path d="M9 10v1M15 10v1M12 9v4l-1 1M9.5 15c1.5 1 3.5 1 5 0"/></svg>
+        </div>
+        <p class="muted" style="font-size:12px;margin:4px 0 0">Tap for Face ID (returning users)</p>
+      </div>
+    </div>
+    <p class="note">Passwordless sign-in — we send a one-time code. Demo skips the code step.</p>
+  </section>
+
+  <!-- 2. REGISTER / ADDRESS -->
+  <section class="screen hidden" id="s-register">
+    <p class="eyebrow">Your property</p>
+    <h2 style="font-size:24px;margin:6px 0 4px">Confirm your address</h2>
+    <p class="muted" style="margin-bottom:16px">We detected your location and validated it with USPS.</p>
+    <div class="card">
+      <label class="field"><span>Property address</span>
+        <input id="addr" type="text" value="7421 Gall Blvd, Zephyrhills, FL 33545" />
+        <div class="err-msg" id="e-addr">Address required.</div>
+      </label>
+      <div class="chip" style="margin-top:12px;background:#F1F7F2;border-color:#cfe6d5"><span class="dot"></span> USPS validated · deliverable</div>
+      <label class="field"><span>Full name (insured)</span>
+        <input id="fullname" type="text" placeholder="Jordan Rivera" value="Jordan Rivera" />
+        <div class="err-msg" id="e-fullname">Name required.</div>
+      </label>
+    </div>
+    <p class="note">Inputs so far: <b id="inpReg">2</b> — everything below this we fetch for you.</p>
+  </section>
+
+  <!-- 3. SUBMISSION -->
+  <section class="screen hidden" id="s-submit">
+    <p class="eyebrow">Property profile</p>
+    <h2 style="font-size:24px;margin:6px 0 4px">Here's what we found</h2>
+    <p class="muted" style="margin-bottom:8px">Pre-filled from Verisk & public records. Tap any chip to correct it.</p>
+    <div class="card">
+      <div class="chips" id="verisk">
+        <span class="chip"><span class="dot"></span> Built <b>2016</b></span>
+        <span class="chip"><span class="dot"></span> <b>2,180</b> sq ft</span>
+        <span class="chip"><span class="dot"></span> Roof age <b>4 yrs</b></span>
+        <span class="chip"><span class="dot"></span> <b>Masonry</b></span>
+        <span class="chip"><span class="dot"></span> Protection class <b>3</b></span>
+        <span class="chip"><span class="dot"></span> No prior loss</span>
+      </div>
+      <p class="muted" style="font-size:12px;margin-top:14px">Source: Verisk property attributes · retrieved just now</p>
+    </div>
+    <div class="card">
+      <p style="font-weight:600;font-size:14px;margin:0 0 4px">A couple things only you know</p>
+      <label class="field"><span>Is this your primary residence?</span>
+        <select id="occ"><option>Primary residence</option><option>Secondary / seasonal</option><option>Rental</option></select>
+      </label>
+      <label class="field"><span>Any claims in the last 5 years?</span>
+        <select id="claims"><option>No claims</option><option>1 claim</option><option>2+ claims</option></select>
+      </label>
+    </div>
+    <p class="note">Only <b>2</b> questions asked — the other 6 attributes were pre-filled. Running input total: <b id="inpSub">4</b>.</p>
+  </section>
+
+  <!-- 4. QUOTE -->
+  <section class="screen hidden" id="s-quote">
+    <div class="premium-bar" id="pbar">
+      <div><div style="font-size:11px;opacity:.8;letter-spacing:.05em">ANNUAL PREMIUM</div><div class="n" id="premBig">$0<small>/yr</small></div></div>
+      <div style="text-align:right"><div style="font-size:11px;opacity:.8" id="monthly">$0/mo</div><div style="font-size:11px;opacity:.8">Recalculated live</div></div>
+    </div>
+    <p class="eyebrow" style="margin-top:14px">Choose your plan</p>
+    <div id="pkgs"></div>
+
+    <h3 style="font-size:16px;margin:22px 0 2px">Fine-tune coverage</h3>
+    <p class="muted" style="font-size:12.5px">Premium updates as you slide.</p>
+    <div class="card">
+      <div class="slider-row">
+        <div class="lab"><span>Dwelling (Coverage A)</span><span class="val" id="vA">$400,000</span></div>
+        <input type="range" id="covA" min="200000" max="750000" step="10000" value="400000" />
+      </div>
+      <div class="slider-row">
+        <div class="lab"><span>Personal property (C)</span><span class="val" id="vC">$200,000</span></div>
+        <input type="range" id="covC" min="50000" max="375000" step="5000" value="200000" />
+      </div>
+      <div class="slider-row">
+        <div class="lab"><span>Liability</span><span class="val" id="vL">$300,000</span></div>
+        <input type="range" id="covL" min="100000" max="500000" step="100000" value="300000" />
+      </div>
+      <div class="slider-row">
+        <div class="lab"><span>All-other-perils deductible</span><span class="val" id="vD">$2,500</span></div>
+        <input type="range" id="ded" min="1000" max="5000" step="500" value="2500" />
+      </div>
+      <div class="slider-row">
+        <div class="lab"><span>Hurricane deductible</span><span class="val" id="vH">2%</span></div>
+        <input type="range" id="hur" min="2" max="10" step="1" value="2" />
+      </div>
+    </div>
+
+    <details class="disc">
+      <summary>Florida disclosures <span>＋</span></summary>
+      <div class="body">
+        <p><b>Hurricane deductible</b> applies per calendar year to windstorm losses from a declared hurricane, calculated as a percentage of Coverage A.</p>
+        <p><b>Flood is excluded.</b> This policy does not cover flood; separate NFIP or private flood coverage is required.</p>
+        <p><b>Sinkhole / catastrophic ground cover collapse</b> coverage terms apply per Florida statute.</p>
+        <p class="muted">Demo copy — placeholder for filed statutory language. Confirm against current FL OIR forms before filing.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- 5. BIND -->
+  <section class="screen hidden" id="s-bind">
+    <p class="eyebrow">Review & sign</p>
+    <h2 style="font-size:24px;margin:6px 0 12px">Confirm your policy</h2>
+    <div class="card">
+      <div class="row"><span>Insured</span><b id="bName">Jordan Rivera</b></div>
+      <div class="row"><span>Property</span><b style="text-align:right;max-width:60%" id="bAddr">—</b></div>
+      <div class="row"><span>Plan</span><b id="bPlan">Standard</b></div>
+      <div class="row"><span>Dwelling / Liability</span><b id="bCov">—</b></div>
+      <div class="row"><span>Hurricane deductible</span><b id="bHur">—</b></div>
+      <div class="row"><span>Effective date</span><b id="bEff">—</b></div>
+      <div class="row"><span>Annual premium</span><b id="bPrem" style="color:var(--ink)">—</b></div>
+    </div>
+    <div class="card">
+      <p style="font-weight:600;font-size:14px;margin:0 0 4px">Underwriting check</p>
+      <div class="chip" style="background:#F1F7F2;border-color:#cfe6d5"><span class="dot"></span> Eligible · roof age within guidelines · no open referrals</div>
+      <p class="muted" style="font-size:12px;margin-top:10px">Home built 2016 with a 4-year roof clears the wind-mitigation rule, so no 4-point inspection upload is required.</p>
+    </div>
+    <label class="field" style="display:flex;gap:10px;align-items:flex-start;background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:14px;margin-top:14px;cursor:pointer">
+      <input type="checkbox" id="esign" style="width:20px;height:20px;flex:none;margin-top:1px" />
+      <span style="font-size:13px;font-weight:500">I've read the Florida disclosures and agree to e-sign this application (ESIGN/UETA).</span>
+    </label>
+    <div class="err-msg" id="e-esign" style="margin-top:6px">Please e-sign to continue.</div>
+  </section>
+
+  <!-- 6. PAY -->
+  <section class="screen hidden" id="s-pay">
+    <p class="eyebrow">Payment</p>
+    <h2 style="font-size:24px;margin:6px 0 12px">How would you like to pay?</h2>
+    <div class="card">
+      <div class="row" style="border:0;padding-bottom:4px"><span>Pay in full (annual)</span><b id="payFull">—</b></div>
+      <div class="row" style="border:0;padding-top:0"><span class="muted" style="font-size:13px">or 10 monthly installments</span><span class="muted" id="payInst">—</span></div>
+      <div class="pay sel" data-pay="card" onclick="Flow.pickPay('card')">
+        <div class="ic" style="background:#1B2A4A">JPMC</div>
+        <div><b style="font-size:14px">Card / ACH</b><div class="muted" style="font-size:12px">via J.P. Morgan Payments</div></div>
+      </div>
+      <div class="pay" data-pay="paypal" onclick="Flow.pickPay('paypal')">
+        <div class="ic" style="background:#003087">PayPal</div>
+        <div><b style="font-size:14px">PayPal</b><div class="muted" style="font-size:12px">Digital wallet</div></div>
+      </div>
+    </div>
+    <div class="card" id="cardFields">
+      <label class="field"><span>Card number</span><input id="ccnum" inputmode="numeric" placeholder="4242 4242 4242 4242" value="4242 4242 4242 4242" /></label>
+      <div style="display:flex;gap:12px">
+        <label class="field" style="flex:1"><span>Expiry</span><input placeholder="12/28" value="12/28" /></label>
+        <label class="field" style="flex:1"><span>CVC</span><input placeholder="123" value="123" /></label>
+      </div>
+    </div>
+    <p class="note">Demo only — no real charge. Card data would be tokenized by JPMC; it never touches app servers (PCI SAQ-A).</p>
+  </section>
+
+  <!-- 7. ISSUE + DEC -->
+  <section class="screen hidden" id="s-issue">
+    <div class="card" style="text-align:center">
+      <div class="seal"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+      <h2 style="font-size:23px">You're covered.</h2>
+      <p class="muted" style="margin:6px 0 0">Policy <b id="polNum">HH-FL-000000</b> is active. We emailed your packet and sent a push notification.</p>
+      <div class="chip" style="margin:14px auto 0;justify-content:center;width:max-content"><span class="dot"></span> Bound in <b id="elapsed">—</b></div>
+    </div>
+
+    <h3 style="font-size:16px;margin:22px 0 10px">Declarations page</h3>
+    <div class="dec" id="decDoc">
+      <div class="hd"><div><div class="co">Harbor Home Insurance</div><div class="muted" style="font-size:11px">HO-3 · State of Florida</div></div><div style="text-align:right;font-size:11px" class="muted">Declarations<br>Page 1 of 1</div></div>
+      <div class="ln"><span>Policy number</span><span id="dPol">—</span></div>
+      <div class="ln"><span>Named insured</span><span id="dName">—</span></div>
+      <div class="ln"><span>Property</span><span id="dAddr" style="text-align:right;max-width:55%">—</span></div>
+      <div class="ln"><span>Policy term</span><span id="dTerm">—</span></div>
+      <div class="ln"><span>Dwelling (A)</span><span id="dA">—</span></div>
+      <div class="ln"><span>Personal property (C)</span><span id="dC">—</span></div>
+      <div class="ln"><span>Liability</span><span id="dL">—</span></div>
+      <div class="ln"><span>AOP deductible</span><span id="dDed">—</span></div>
+      <div class="ln"><span>Hurricane deductible</span><span id="dHur">—</span></div>
+      <div class="ln"><span>Annual premium</span><span id="dPrem" style="font-weight:700">—</span></div>
+    </div>
+    <button class="btn btn-ghost" style="margin-top:14px" onclick="Flow.share()">Share / send to lender</button>
+  </section>
+
+  <!-- DOCK (nav buttons) -->
+  <div class="dock" id="dock">
+    <button class="btn btn-primary" id="cta" onclick="Flow.next()">Continue</button>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+/* ---------- PWA plumbing: inline manifest + service worker ---------- */
+(function(){
+  const manifest={
+    name:"Harbor Home Insurance",short_name:"Harbor Home",
+    start_url:".",display:"standalone",background_color:"#F6F2E9",theme_color:"#0B3B3C",
+    icons:[{src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230B3B3C'/%3E%3Cpath d='M50 22 L74 40 V72 H26 V40 Z' fill='none' stroke='%23E8B04B' stroke-width='6' stroke-linejoin='round'/%3E%3C/svg%3E",sizes:"512x512",type:"image/svg+xml",purpose:"any maskable"}]
+  };
+  document.getElementById('mf').href="data:application/manifest+json,"+encodeURIComponent(JSON.stringify(manifest));
+  if('serviceWorker' in navigator){
+    const sw=`self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('activate',e=>self.clients.claim());self.addEventListener('fetch',e=>{});`;
+    const url=URL.createObjectURL(new Blob([sw],{type:'text/javascript'}));
+    navigator.serviceWorker.register(url).catch(()=>{});
+  }
+})();
+
+/* ---------- Premium engine (simulated rating) ---------- */
+const Rate={
+  base:820,
+  plans:{Essential:{m:0.85,c:0.45,label:"Core coverage, higher deductible"},
+         Standard:{m:1.0,c:0.65,label:"Balanced coverage — most popular"},
+         Premium:{m:1.22,c:0.9,label:"Extended + water backup + higher limits"}},
+  calc(plan){
+    const p=this.plans[plan];
+    const A=+covA.value,C=+covC.value,L=+covL.value,D=+ded.value,H=+hur.value;
+    let prem=this.base*p.m;
+    prem+=A*0.0034;           // dwelling drives most of it
+    prem+=C*0.0011*p.c;
+    prem+=(L/100000)*38;
+    prem*= (D<=1000?1.12: D<=2000?1.05: D<=3000?1.0: D<=4000?0.95:0.9); // deductible credit
+    prem*= (H<=2?1.15: H<=5?1.0: H<=7?0.93:0.87);                       // hurricane ded credit
+    return Math.round(prem);
+  }
+};
+
+/* ---------- Flow controller ---------- */
+const screens=["login","register","submit","quote","bind","pay","issue"];
+const names=["Sign in","Your property","Property profile","Choose coverage","Review & sign","Payment","Issued"];
+const State={i:0,plan:"Standard",pay:"card",prem:0,started:null};
+
+function $(id){return document.getElementById(id)}
+function money(n){return "$"+(+n).toLocaleString()}
+function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2200)}
+
+const Flow={
+  show(i){
+    screens.forEach((s,k)=>$('s-'+s).classList.toggle('hidden',k!==i));
+    State.i=i;
+    $('bar').style.width=((i)/(screens.length-1)*100)+"%";
+    $('stepName').textContent=names[i];
+    $('stepCount').textContent="Step "+(i+1)+" of "+screens.length;
+    const cta=$('cta');
+    cta.className="btn btn-primary";
+    if(i===0)cta.textContent="Sign in";
+    else if(i===3)cta.textContent="Choose this plan → Review";
+    else if(i===4){cta.textContent="Agree & continue to payment"}
+    else if(i===5){cta.textContent="Pay & bind policy";cta.className="btn btn-gold"}
+    else if(i===6){cta.textContent="Start a new quote"}
+    else cta.textContent="Continue";
+    window.scrollTo(0,0);
+  },
+  biometric(){toast("Face ID recognized");setTimeout(()=>this.next(true),500)},
+  validate(){
+    const i=State.i;let ok=true;
+    const bad=(id,cond)=>{const el=$(id);const e=$('e-'+id);if(cond){el&&el.classList.add('invalid');e&&(e.style.display='block');ok=false}else{el&&el.classList.remove('invalid');e&&(e.style.display='none')}};
+    if(i===0){const v=$('identifier').value.trim();bad('identifier',!(/^\S+@\S+\.\S+$/.test(v)||/^\d{10}$/.test(v.replace(/\D/g,''))&&v.replace(/\D/g,'').length===10))}
+    if(i===1){bad('addr',!$('addr').value.trim());bad('fullname',!$('fullname').value.trim())}
+    if(i===4){bad('esign',!$('esign').checked)}
+    return ok;
+  },
+  next(skip){
+    if(!skip && !this.validate())return;
+    if(State.i===0 && !State.started)State.started=Date.now();
+    if(State.i===2)this.buildQuote();
+    if(State.i===3)this.fillBind();
+    if(State.i===5)return this.pay();
+    if(State.i===6){location.reload();return}
+    this.show(State.i+1);
+  },
+  buildQuote(){
+    const box=$('pkgs');box.innerHTML="";
+    Object.keys(Rate.plans).forEach(name=>{
+      const reco=name==="Standard";
+      const d=document.createElement('div');
+      d.className="pkg"+(reco?" reco":"")+(name===State.plan?" sel":"");
+      d.onclick=()=>{State.plan=name;this.recalc()};
+      d.dataset.plan=name;
+      d.innerHTML=`<div class="top"><span class="name">${name}</span><span class="price" data-p="${name}">$0<small>/yr</small></span></div><div class="feat">${Rate.plans[name].label}</div>`;
+      box.appendChild(d);
+    });
+    ['covA','covC','covL','ded','hur'].forEach(id=>$(id).addEventListener('input',()=>this.recalc()));
+    this.recalc();
+  },
+  recalc(){
+    $('vA').textContent=money(covA.value);
+    $('vC').textContent=money(covC.value);
+    $('vL').textContent=money(covL.value);
+    $('vD').textContent=money(ded.value);
+    $('vH').textContent=hur.value+"%";
+    document.querySelectorAll('.pkg').forEach(p=>{
+      const nm=p.dataset.plan;
+      p.classList.toggle('sel',nm===State.plan);
+      p.querySelector('[data-p]').innerHTML=money(Rate.calc(nm))+"<small>/yr</small>";
+    });
+    State.prem=Rate.calc(State.plan);
+    $('premBig').innerHTML=money(State.prem)+"<small>/yr</small>";
+    $('monthly').textContent=money(Math.round(State.prem/10))+"/mo × 10";
+    const pb=$('pbar');pb.classList.remove('flash');void pb.offsetWidth;pb.classList.add('flash');
+  },
+  fillBind(){
+    const eff=new Date();const opts={year:'numeric',month:'short',day:'numeric'};
+    $('bName').textContent=$('fullname').value;
+    $('bAddr').textContent=$('addr').value;
+    $('bPlan').textContent=State.plan;
+    $('bCov').textContent=money(covA.value)+" / "+money(covL.value);
+    $('bHur').textContent=hur.value+"% ("+money(Math.round(+covA.value*hur.value/100))+")";
+    $('bEff').textContent=eff.toLocaleDateString('en-US',opts);
+    $('bPrem').textContent=money(State.prem)+"/yr";
+    $('payFull').textContent=money(State.prem);
+    $('payInst').textContent=money(Math.round(State.prem/10))+"/mo × 10";
+  },
+  pickPay(m){State.pay=m;document.querySelectorAll('.pay').forEach(p=>p.classList.toggle('sel',p.dataset.pay===m));$('cardFields').style.display=m==='card'?'block':'none'},
+  pay(){
+    const cta=$('cta');cta.innerHTML='<span class="spin"></span> Binding…';cta.disabled=true;
+    setTimeout(()=>{cta.disabled=false;this.issue();this.show(6)},1400);
+  },
+  issue(){
+    const pol="HH-FL-"+Math.floor(100000+Math.random()*900000);
+    State.pol=pol;
+    const eff=new Date();const end=new Date();end.setFullYear(end.getFullYear()+1);
+    const fmt=d=>d.toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'});
+    $('polNum').textContent=pol;$('dPol').textContent=pol;
+    $('dName').textContent=$('fullname').value;
+    $('dAddr').textContent=$('addr').value;
+    $('dTerm').textContent=fmt(eff)+" – "+fmt(end);
+    $('dA').textContent=money(covA.value);
+    $('dC').textContent=money(covC.value);
+    $('dL').textContent=money(covL.value);
+    $('dDed').textContent=money(ded.value);
+    $('dHur').textContent=hur.value+"% ("+money(Math.round(+covA.value*hur.value/100))+")";
+    $('dPrem').textContent=money(State.prem);
+    const secs=Math.max(4,Math.round((Date.now()-State.started)/1000));
+    $('elapsed').textContent=secs<60?secs+" seconds":Math.floor(secs/60)+"m "+(secs%60)+"s";
+  },
+  share(){
+    const txt="Harbor Home policy "+State.pol+" — Declarations page (demo).";
+    if(navigator.share){navigator.share({title:"Declarations page",text:txt}).catch(()=>{})}
+    else toast("Dec page ready — shared to lender (demo)");
+  }
+};
+Flow.show(0);
+</script>
+</body>
+</html>
